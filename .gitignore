@@ -1,0 +1,5 @@
+env
+twitter_secrets.json
+__pycache__
+twitter.db
+scrape.py
