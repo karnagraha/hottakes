@@ -1,36 +1,39 @@
-# read twitter feed latest posts
 import asyncio
-import functools
+import discord
 import json
 
-import tweepy
-import tweepy.asynchronous
-import streamer
+from streamer import monitor_streamer
 
+client = discord.Client(intents=discord.Intents.default())
 
-@functools.lru_cache(maxsize=None)
-def get_bearer_token():
-    # get bearer token from twitter_secrets.json
-    with open("twitter_secrets.json") as f:
+def get_bot_token():
+    with open("discord_secrets.json") as f:
         secrets = json.load(f)
-    bearer_token = secrets["bearer_token"]
-    return bearer_token
+    return secrets["bot_token"]
 
-async def main():
-    # rule format
-    # https://developer.twitter.com/en/docs/twitter-api/tweets/filtered-stream/integrate/build-a-rule
-    rules = [
-        tweepy.StreamRule(
-            value="lang:en -is:retweet -#AfricanAI (from:xlr8harder OR to:xlr8harder OR artificial intelligence OR technocapital OR ai safety OR superintelligence)",
-            tag="ai"
-        )
-    ]
-    s = streamer.Streamer(get_bearer_token())
-    await s.set_rules(rules)
-    async for tweet, tag in s:
-        print(f"{tweet.user.screen_name} {tweet.full_text}")
-        print(f"{tag}, https://twitter.com/{tweet.user.screen_name}/status/{tweet.id}")
-        print("======================")
+
+@client.event
+async def on_ready():
+    print(f"We have logged in as {client.user}")
+    asyncio.get_event_loop().create_task(monitor_streamer.monitor_stream(client))
+
+@client.event
+async def on_message(message):
+    if message.author == client.user:
+        return
+    # print message and channel id
+    print(f"Message: {message.content} Channel: {message.channel.id}")
+
+
+def main():
+    c = client.run(get_bot_token())
+
+    # wait for all tasks to exit
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(loop.shutdown_asyncgens())
+    loop.close()
+
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()
+

@@ -31,7 +31,7 @@ class Streamer(tweepy.asynchronous.AsyncStreamingClient):
         return await self.queue.get()
     
     async def on_connect(self):
-        print("Connected to streaming API")
+        print("Connected to Twitter streaming API")
 
     async def on_data(self, data):
         data = json.loads(data)
@@ -73,22 +73,3 @@ def get_bearer_token():
         secrets = json.load(f)
     bearer_token = secrets["bearer_token"]
     return bearer_token
-
-async def main():
-    # rule format
-    # https://developer.twitter.com/en/docs/twitter-api/tweets/filtered-stream/integrate/build-a-rule
-    rules = [
-        tweepy.StreamRule(
-            value="lang:en -is:retweet -#AfricanAI (from:xlr8harder OR to:xlr8harder OR artificial intelligence OR technocapital OR ai safety OR superintelligence)",
-            tag="ai"
-        )
-    ]
-    streamer = Streamer(get_bearer_token())
-    await streamer.set_rules(rules)
-    async for tweet, tag in streamer:
-        print(f"{tweet.user.screen_name} {tweet.full_text}")
-        print(f"{tag}, https://twitter.com/{tweet.user.screen_name}/status/{tweet.id}")
-        print("======================")
-
-if __name__ == "__main__":
-    asyncio.run(main())
