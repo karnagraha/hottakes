@@ -1,6 +1,7 @@
 import asyncio
 import discord
 import json
+import re
 
 from streamer import monitor_streamer
 
@@ -18,11 +19,22 @@ async def on_ready():
     asyncio.get_event_loop().create_task(monitor_streamer.monitor_stream(client))
 
 @client.event
+async def on_reaction_add(reaction, user):
+    match = re.search(r"https://twitter.com/[^/]+/status/(\d+)", reaction.message.content)
+    url = match.group(0)
+    print(f"User {user} liked {url}")
+    await reaction.message.channel.send("Thanks for the like!")
+
+@client.event
 async def on_message(message):
+    match = re.search(r"https://twitter.com/[^/]+/status/(\d+)", message.content)
+    url = match.group(0)
     if message.author == client.user:
-        return
-    # print message and channel id
-    print(f"Message: {message.content} Channel: {message.channel.id}")
+        pass
+        # extract tweet url from message
+    else:
+        # print message and channel id
+        print(f"Message: {message.content} Channel: {message.channel.id}")
 
 
 def main():
@@ -36,4 +48,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

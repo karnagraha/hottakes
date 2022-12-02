@@ -15,7 +15,7 @@ def get_history():
     db = get_db()
     c = db.cursor()
     # select the last 50 messages by timestamp, where the summary field isn't empty and it is not a repeat.
-    rows = c.execute("SELECT * FROM tweets WHERE summary != '' AND repeat = 0 ORDER BY timestamp DESC LIMIT 50").fetchall()
+    rows = c.execute("SELECT summary FROM tweets WHERE summary != '' AND repeat = 0 ORDER BY timestamp DESC LIMIT 50").fetchall()
     return "\n".join([f"- {row[0]}" for row in rows])
 
 def get_db():
@@ -111,6 +111,8 @@ New tweet:
 """ + summary + """
 
 Is this tweet similar to any of the old tweets? Answer with "yes" or "no"."""
+
+    print(prompt)
     return await gpt.send_yn_prompt(prompt)
     
 
@@ -130,17 +132,19 @@ NEW CONTENT:"""
 # get db handle
 # write tweet to db
 def write_tweet_to_db(tweet, rewrite, rating, repeat, summary, url):
+    print(f"Writing tweet to db: {url}")
     timestamp = datetime.datetime.now()
     db = get_db()
     c = db.cursor()
     c.execute("INSERT INTO tweets VALUES (NULL, ?, ?, ?, ?, ?, ?, ?)", (timestamp, tweet, rewrite, rating, repeat, summary, url))
+    db.commit()
 
 async def monitor_stream(client):
     # rule format
     # https://developer.twitter.com/en/docs/twitter-api/tweets/filtered-stream/integrate/build-a-rule
     rules = [
         tweepy.StreamRule(
-            value="lang:en -is:retweet (artificial intelligence OR technocapital OR ai safety OR superintelligence)",
+            value="lang:en -is:retweet -NFT (artificial intelligence OR technocapital OR ai safety OR superintelligence)",
             tag="ai"
         )
     ]
@@ -149,6 +153,7 @@ async def monitor_stream(client):
     async for tweet, unused_tag in s:
         # tweeter
         full_tweet = f"{tweet.user.name} (@{tweet.user.screen_name}): {tweet.full_text}"
+        url = f"https://twitter.com/{tweet.user.screen_name}/status/{tweet.id}"
         rating = await rate_tweet(full_tweet)
         if rating >= 8 and await want_write(full_tweet):
             summary = await get_summary(full_tweet)
@@ -161,45 +166,4 @@ async def monitor_stream(client):
             msg = f"✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️\nSUMMARY: {summary}\nRATING: {rating}\nREPEAT: {repeat}\nORIGINAL: {full_tweet}\nUPDATED: {newtweet}\nURL: {url}"
             client.loop.create_task(client.get_channel(1047786399266512956).send(msg))
         else:
-            write_tweet_to_db(full_tweet, "", rating, 0, "", "")
-
-# load credentials from json file
-def get_bot_token():
-    with open("discord_secrets.json") as f:
-        secrets = json.load(f)
-    return secrets["bot_token"]
-
-client = discord.Client(intents=discord.Intents.default())
-# authenticate discord client
-def get_client():
-    return client
-
-@client.event
-async def on_ready():
-    print(f"We have logged in as {client.user}")
-    client.loop.create_task(client.get_channel(1047786399266512956).send("Online."))
-    asyncio.get_event_loop().create_task(monitor_stream(client))
-
-@client.event
-async def on_message(message):
-    url = re.search(r"https://twitter.com/[^/]+/status/(\d+)", message.content)
-    if url:
-        print(f"URL: {url}")
-    if message.author == client.user:
-        # extract tweet url from message
-        url = re.search(r"https://twitter.com/[^/]+/status/(\d+)", message.content)
-        print(f"URL: {url}")
-
-        try:
-            reaction, user = await client.wait_for('reaction_add', timeout=60.0)
-        except asyncio.TimeoutError:
-            pass
-        else:
-            print(f"Reaction: {reaction}")
-            print(f"User: {user}")
-
-        # wait for a reaction.
-        return
-    else:
-        # print message and channel id
-        print(f"Message: {message.content} Channel: {message.channel.id}")
+            write_tweet_to_db(full_tweet, "", rating, 0, "", url)
