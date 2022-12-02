@@ -1,31 +1,32 @@
-import openai
 import functools
 import json
+import re
 
-@functools.lru_cache(maxsize=None)
-def get_api_key():
-    with open("openai_secrets.json") as f:
-        secrets = json.load(f)
-    return secrets["api_key"]
-openai.api_key = get_api_key()
+from . import asyncopenai as openai
 
-
-def send_yn_prompt(prompt):
-    r = send_prompt(prompt)
+async def send_yn_prompt(prompt):
+    r = await send_prompt(prompt)
     if "yes" in r.lower():
         return True
     return False
 
-def send_prompt(prompt):
-    response = openai.Completion.create(
-        engine="text-davinci-003",
+async def send_rate_prompt(prompt):
+    r = await send_prompt(prompt)
+    r = r.strip()
+    if re.match(r"^[0-9]+$", r):
+        return int(r)
+    return 0
+
+
+async def send_prompt(prompt):
+    response = await openai.create_completion(
         prompt=prompt,
+        engine="text-davinci-003",
         temperature=0.9,
-        max_tokens=200,
+        max_tokens=2000,
         top_p=1,
         frequency_penalty=0,
         presence_penalty=0,
-        #stop=["---"],
     )
-    r = response.choices[0].text
+    r = response["choices"][0]["text"]
     return r
