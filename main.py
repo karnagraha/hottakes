@@ -20,19 +20,18 @@ async def on_ready():
 
 @client.event
 async def on_reaction_add(reaction, user):
-    match = re.search(r"https://twitter.com/[^/]+/status/(\d+)", reaction.message.content)
-    url = match.group(0)
-    print(f"User {user} liked {url}")
-    await reaction.message.channel.send("Thanks for the like!")
+    # if the message is from me
+    if reaction.message.author == client.user:
+        match = re.search(r"https://twitter.com/[^/]+/status/(\d+)", reaction.message.content)
+        if match:
+            url = match.group(0)
+            print(f"User {user} liked {url}")
+            await reaction.message.channel.send("Thanks for the like!")
 
 @client.event
 async def on_message(message):
-    match = re.search(r"https://twitter.com/[^/]+/status/(\d+)", message.content)
-    url = match.group(0)
-    if message.author == client.user:
-        pass
-        # extract tweet url from message
-    else:
+    # if it's not the author
+    if message.author != client.user:
         # print message and channel id
         print(f"Message: {message.content} Channel: {message.channel.id}")
 
