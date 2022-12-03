@@ -47,7 +47,8 @@ Content policy:
 - No AI ethics, equity, fairness, justice, or indigenous rights.
 - No climate change, environment, or sustainability.
 - No wokeness, racial issues, or social issues.
-- No Crypto
+- No crypto, no NFTs, no DeFi
+- No obvious press releases, no obvious marketing. 
 - The tweet should be about AI and get people excited about the future!
 
 Consider the following tweet.
@@ -68,7 +69,8 @@ Content policy:
 - No AI ethics, equity, fairness, justice, or indigenous rights.
 - No climate change, environment, or sustainability.
 - No wokeness, racial issues, or social issues.
-- No crypto
+- No crypto, no NFTs, no DeFi
+- No obvious press releases, no obvious marketing. 
 - The tweet should be about AI and get people excited about the future!
 
 Consider the following tweet.
@@ -112,7 +114,6 @@ New tweet:
 
 Is this tweet similar to any of the old tweets? Answer with "yes" or "no"."""
 
-    print(prompt)
     return await gpt.send_yn_prompt(prompt)
     
 
@@ -154,6 +155,9 @@ async def monitor_stream(client):
         # tweeter
         full_tweet = f"{tweet.user.name} (@{tweet.user.screen_name}): {tweet.full_text}"
         url = f"https://twitter.com/{tweet.user.screen_name}/status/{tweet.id}"
+        if tweet.in_reply_to_status_id is not None:
+            print(f"Skipping reply: {url}")
+            continue
         rating = await rate_tweet(full_tweet)
         if rating >= 8 and await want_write(full_tweet):
             summary = await get_summary(full_tweet)
@@ -163,7 +167,7 @@ async def monitor_stream(client):
             write_tweet_to_db(full_tweet, newtweet, rating, repeat, summary, url)
             if repeat:
                 continue
-            msg = f"✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️\nSUMMARY: {summary}\nRATING: {rating}\nREPEAT: {repeat}\nORIGINAL: {full_tweet}\nUPDATED: {newtweet}\nURL: {url}"
+            msg = f"✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️\nURL: {url}\nSUMMARY: {summary}\nRATING: {rating}\nREPEAT: {repeat}\nORIGINAL: {full_tweet}\nUPDATED: {newtweet}\n"
             client.loop.create_task(client.get_channel(1047786399266512956).send(msg))
         else:
             write_tweet_to_db(full_tweet, "", rating, 0, "", url)
