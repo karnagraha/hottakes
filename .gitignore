@@ -1,5 +1,5 @@
 env
 *_secrets.json
 __pycache__
-twitter.db
+*.db
 scrape.py

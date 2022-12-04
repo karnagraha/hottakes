@@ -30,11 +30,12 @@ async def on_reaction_add(reaction, user):
 
 @client.event
 async def on_message(message):
-    # if it's not the author
-    if message.author != client.user:
-        # print message and channel id
-        print(f"Message: {message.content} Channel: {message.channel.id}")
-
+    print(f"Message: {message.content} Channel: {message.channel.id}")
+    if message.author == client.user:
+        return
+    if not message.guild:
+        await message.channel.send("Thanks for the DM!")
+    
 
 def main():
     c = client.run(get_bot_token())
