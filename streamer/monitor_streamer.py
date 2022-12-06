@@ -6,6 +6,7 @@ import tweepy
 from . import tweetstreamer
 from . import contentai
 from . import contentwhitepill
+from . import contentxlr8harder
 
 
 async def monitor_stream(client):
@@ -13,22 +14,28 @@ async def monitor_stream(client):
     # https://developer.twitter.com/en/docs/twitter-api/tweets/filtered-stream/integrate/build-a-rule
     rules = [
         tweepy.StreamRule(
-            value="lang:en -is:retweet -NFT (artificial intelligence OR technocapital OR ai safety OR superintelligence) -nft -crypto -bitcoin -ethereum",
+            value='lang:en -is:retweet -is:reply -NFT (artificial intelligence OR technocapital OR ai safety OR superintelligence OR transhumanism OR transhumanist OR "e/acc" OR effective accelerationism) -mint -nft -crypto -bitcoin -ethereum',
             tag="ai"
         ),
         tweepy.StreamRule(
-            value="lang:en -is:retweet (whitepill OR human flourishing OR technooptimism OR futurism OR cyberpunk) -nft -crypto -bitcoin -ethereum -edgerunners -2077",
+            value="lang:en -is:retweet (whitepill OR white pill OR human flourishing OR techno optimism OR techno optimist OR techno-optimism OR futurism OR futurist or #todayinhistory OR cybernetic) -mint -nft -crypto -bitcoin -ethereum",
             tag="whitepill"
+        ),
+        tweepy.StreamRule(
+            value="xlr8harder -mint -nft -crypto -bitcoin -ethereum",
+            tag="xlr8harder"
         )
     ]
     s = tweetstreamer.Streamer(tweetstreamer.get_bearer_token())
     await s.set_rules(rules)
     async for tweet, tag in s:
         url = f"https://twitter.com/{tweet.user.screen_name}/status/{tweet.id}"
-        if tweet.in_reply_to_status_id is not None:
+        if tag == "xlr8harder":
+            await contentxlr8harder.handle_tweet(tweet, client)
+        elif tweet.in_reply_to_status_id is not None:
             print(f"Skipping reply: {url}")
             continue
-        if tag == "ai":
+        elif tag == "ai":
             await contentai.handle_tweet(tweet, client)
         elif tag == "whitepill":
             await contentwhitepill.handle_tweet(tweet, client)

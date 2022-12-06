@@ -4,6 +4,7 @@ import json
 import re
 
 from streamer import monitor_streamer
+from streamer import contentxlr8harder
 
 client = discord.Client(intents=discord.Intents.default())
 
@@ -20,8 +21,13 @@ async def on_ready():
 
 @client.event
 async def on_reaction_add(reaction, user):
-    # if the message is from me
-    if reaction.message.author == client.user:
+    if reaction.message.author != client.user:
+        return
+
+    print(f"reaction added: {reaction}")
+    if reaction.message.channel.id == 1049196639652425749:
+        contentxlr8harder.handle_discord_reaction(reaction, client)
+    else:
         match = re.search(r"https://twitter.com/[^/]+/status/(\d+)", reaction.message.content)
         if match:
             url = match.group(0)

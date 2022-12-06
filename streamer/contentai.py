@@ -121,14 +121,14 @@ async def handle_tweet(tweet, client):
     url = f"https://twitter.com/{tweet.user.screen_name}/status/{tweet.id}"
     rating = await rate_tweet(full_tweet)
     if rating >= 8 and await want_write(full_tweet):
-        summary = await get_summary(full_tweet)
+        summary = await get_summary(tweet.full_text)
         repeat = await is_repeat(summary)
-        newtweet = await write_tweet(full_tweet)
+        newtweet = ""
         url = f"https://twitter.com/{tweet.user.screen_name}/status/{tweet.id}"
         write_tweet_to_db(full_tweet, newtweet, rating, repeat, summary, url)
         if repeat:
             return
-        msg = f"✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️\nURL: {url}\nSUMMARY: {summary}\nRATING: {rating}\nREPEAT: {repeat}\nORIGINAL: {full_tweet}\nUPDATED: {newtweet}\n"
+        msg = f"✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️\nURL: {url}\nSUMMARY: {summary}\nRATING: {rating}\nORIGINAL: {full_tweet}\n"
         client.loop.create_task(client.get_channel(1047786399266512956).send(msg))
     else:
         write_tweet_to_db(full_tweet, "", rating, 0, "", url)

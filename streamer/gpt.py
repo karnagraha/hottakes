@@ -26,5 +26,8 @@ async def send_prompt(prompt):
         frequency_penalty=0,
         presence_penalty=0,
     )
-    r = response["choices"][0]["text"]
+    try:
+        r = response["choices"][0]["text"]
+    except KeyError:
+        r = ""
     return r
