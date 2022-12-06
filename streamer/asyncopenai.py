@@ -44,4 +44,8 @@ async def create_completion(prompt, engine="text-davinci-003", max_tokens=200, t
         "frequency_penalty": frequency_penalty,
         "presence_penalty": presence_penalty
     }
-    return await openai_request("POST", url, json, headers)
+    try:
+        r = await openai_request("POST", url, json, headers)
+    except aiohttp.client_exceptions.ContentTypeError:
+        return None
+    return r

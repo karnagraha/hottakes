@@ -35,8 +35,13 @@ class Streamer(tweepy.asynchronous.AsyncStreamingClient):
 
     async def on_data(self, data):
         data = json.loads(data)
-        tag = data["matching_rules"][0]["tag"]
-        tweet = data["data"]
+        try:
+            tag = data["matching_rules"][0]["tag"]
+            tweet = data["data"]
+        except (KeyError, IndexError) as e:
+            print(f"Error reading stream content: {e}")
+            return
+        
 
         # there is no async call to get the full text of the tweet
         try:
