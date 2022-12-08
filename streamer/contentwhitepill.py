@@ -29,6 +29,6 @@ async def handle_tweet(tweet, client):
     full_tweet = f"{tweet.user.name} (@{tweet.user.screen_name}): {tweet.full_text}"
     url = f"https://twitter.com/{tweet.user.screen_name}/status/{tweet.id}"
     msg = f"URL: {url}"
-    if await classify(full_tweet):
-        msg = "✅ " + msg
+    #if await classify(full_tweet):
+    #    msg = "✅ " + msg
     client.loop.create_task(client.get_channel(1048696123121995836).send(msg))

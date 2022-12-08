@@ -86,8 +86,8 @@ async def handle_tweet(tweet, client):
     full_tweet = f"{tweet.user.name} (@{tweet.user.screen_name}): {tweet.full_text}"
     url = f"https://twitter.com/{tweet.user.screen_name}/status/{tweet.id}"
     msg = f"URL: {url}"
-    response = await respond(full_tweet)
-    msg = msg + "\nRESPONSE: " + response
+    #response = await respond(full_tweet)
+    #msg = msg + "\nRESPONSE: " + response
     client.loop.create_task(client.get_channel(1049196639652425749).send(msg))
 
 async def handle_discord_reaction(reaction, client):
