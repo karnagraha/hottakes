@@ -31,10 +31,6 @@ async def monitor_stream(client):
     s = tweetstreamer.Streamer(tweetstreamer.get_bearer_token())
     await s.set_rules(rules)
     async for tweet, tag in s:
-        # find parent tweet, if there is one.
-        #tweet_id = tweet.id
-        #parent_id = tweet.in_reply_to_status_id
-        #print(tweet_id, parent_id)
         url = f"https://twitter.com/{tweet.user.screen_name}/status/{tweet.id}"
         if tag == "xlr8harder":
             await contentxlr8harder.handle_tweet(tweet, client)
