@@ -6,32 +6,6 @@ import datetime
 
 from . import gpt
 
-def get_history():
-    # get history from db
-    db = get_db()
-    c = db.cursor()
-    # select the last 50 messages by timestamp, where the summary field isn't empty and it is not a repeat.
-    rows = c.execute("SELECT summary FROM tweets WHERE summary != '' AND repeat = 0 ORDER BY timestamp DESC LIMIT 50").fetchall()
-    return "\n".join([f"- {row[0]}" for row in rows])
-
-def get_db():
-    conn = sqlite3.connect("tweets.db")
-    c = conn.cursor()
-    c.execute("""CREATE TABLE IF NOT EXISTS tweets (
-        id integer PRIMARY KEY,
-        timestamp text NOT NULL,
-        tweet text NOT NULL,
-        rewrite text NOT NULL, 
-
-        rating integer NOT NULL,
-        repeat integer NOT NULL,
-        summary text NOT NULL,
-        url text NOT NULL
-    );""")
-    conn.commit()
-    return conn
-
-
 async def rate_tweet(tweet):
     prompt = """We want to identify the absolute best, most interesting tweets about AI.
 We want to identify good tweets about AI, where "good" means it is pro-AI, interesting,
@@ -102,36 +76,6 @@ TWEET:
 NEW CONTENT:"""
     return await gpt.send_prompt(prompt)
 
-# create a sql database to store tweet data in
-# get db handle
-# write tweet to db
-def write_tweet_to_db(tweet, rewrite, rating, repeat, summary, url):
-    print(f"Writing tweet to db: {url}")
-    timestamp = datetime.datetime.now()
-    db = get_db()
-    c = db.cursor()
-    c.execute("INSERT INTO tweets VALUES (NULL, ?, ?, ?, ?, ?, ?, ?)", (timestamp, tweet, rewrite, rating, repeat, summary, url))
-    db.commit()
-
-
-
 async def handle_tweet(tweet, client):
-    # tweeter
-    full_tweet = f"{tweet.user.name} (@{tweet.user.screen_name}): {tweet.full_text}"
     url = f"https://twitter.com/{tweet.user.screen_name}/status/{tweet.id}"
-    rating = await rate_tweet(full_tweet)
-    if rating >= 8 and await want_write(full_tweet):
-        #summary = await get_summary(tweet.full_text)
-        summary = ""
-        #repeat = await is_repeat(summary)
-        repeat = 0
-
-        newtweet = ""
-        url = f"https://twitter.com/{tweet.user.screen_name}/status/{tweet.id}"
-        write_tweet_to_db(full_tweet, newtweet, rating, repeat, summary, url)
-        #if repeat:
-        #    return
-        msg = f"✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️\nURL: {url}\nSUMMARY: {summary}\nRATING: {rating}\nORIGINAL: {full_tweet}\n"
-        client.loop.create_task(client.get_channel(1047786399266512956).send(msg))
-    else:
-        write_tweet_to_db(full_tweet, "", rating, 0, "", url)
+    client.loop.create_task(client.get_channel(1047786399266512956).send(url))

@@ -3,8 +3,10 @@ import asyncio
 import functools
 import json
 
+import tweetdb
 import tweepy
 import tweepy.asynchronous
+import glog as log
 
 class Streamer(tweepy.asynchronous.AsyncStreamingClient):
     def __init__(self, bearer_token, **kwargs):
@@ -14,6 +16,7 @@ class Streamer(tweepy.asynchronous.AsyncStreamingClient):
 
         auth = tweepy.OAuth2BearerHandler(bearer_token)
         self.api = tweepy.API(auth)
+        self.tweetdb = tweetdb.TweetDB(self.api)
 
     def start(self):
         """This starts a background task for the streamer, but you still need to
@@ -31,7 +34,7 @@ class Streamer(tweepy.asynchronous.AsyncStreamingClient):
         return await self.queue.get()
     
     async def on_connect(self):
-        print("Connected to Twitter streaming API")
+        log.info("Connected to Twitter streaming API")
 
     async def on_data(self, data):
         data = json.loads(data)
@@ -39,15 +42,13 @@ class Streamer(tweepy.asynchronous.AsyncStreamingClient):
             tag = data["matching_rules"][0]["tag"]
             tweet = data["data"]
         except (KeyError, IndexError) as e:
-            print(f"Error reading stream content: {e}")
+            log.warn(f"Error reading stream content: {e}")
             return
+        log.info(f"Received tweet {tweet['id']} on tag {tag}")
         
-
-        # there is no async call to get the full text of the tweet
-        try:
-            tweet = self.api.get_status(tweet["id"], tweet_mode="extended")
-        except tweepy.TweepyException as e:
-            print("error getting tweet: {e}")
+        tweet = self.tweetdb.get_tweet(tweet["id"])
+        if tweet is None:
+            log(f"Failed to get_tweet for {tweet['id']}")
             return
 
         # enqueue tweet and tag
@@ -65,10 +66,10 @@ class Streamer(tweepy.asynchronous.AsyncStreamingClient):
             await self.add_rules(rule)
 
     async def on_error(self, status_code):
-        print(status_code)
+        log("Error from Twitter: %s" % status_code)
 
     async def on_timeout(self):
-        print("Timeout...")
+        log("Timeout from Twitter")
         return True  # Don't kill the stream
 
 @functools.lru_cache(maxsize=None)
