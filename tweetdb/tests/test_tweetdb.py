@@ -8,7 +8,7 @@ import tweepy
 
 # mock implementation of the tweepy.API class
 class MockAPI:
-    def get_status(self, id):
+    def get_status(self, id, tweet_mode="unused"):
 
         # special handling for tweet 456 which is always a reply to tweet 789
         in_reply_to_status_id = None
@@ -86,4 +86,15 @@ class TestTweetDB(unittest.TestCase):
         self.assertEqual(tweet.in_reply_to_status_id, 789)
 
 
+    def test_get_tweet_with_context(self):
+        tweet_id = 456
+        tweets = self.db.get_tweet_with_context(tweet_id)
+
+        self.assertEqual(len(tweets), 2)
+        self.assertEqual(tweets[0].id, 789)
+        self.assertEqual(tweets[0].text, "Tweet 789")
+        self.assertEqual(tweets[0].user.screen_name, "test_user")
+        self.assertEqual(tweets[1].id, tweet_id)
+        self.assertEqual(tweets[1].text, f"Tweet {tweet_id}")
+        self.assertEqual(tweets[1].user.screen_name, "test_user")
 

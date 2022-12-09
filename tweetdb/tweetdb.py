@@ -7,9 +7,9 @@
 import sqlite3
 import json
 import tweepy
-import glog as log
 import tweepy
 
+import glog as log
 log.setLevel("INFO")
 
 class TweetDB:
@@ -42,7 +42,7 @@ class TweetDB:
         # use tweepy api to retrieve the tweet by id
         log.info(f"Retrieving tweet {id} from Twitter")
         try:
-            tweet = self.api.get_status(id)
+            tweet = self.api.get_status(id, tweet_mode="extended")
         except tweepy.TweepyException as e:
             log.warn(f"Failed to retrieve tweet {id}: {e}")
             return None
@@ -67,9 +67,31 @@ class TweetDB:
         if not tweet:
             log.info(f"Tweet {id} not found in DB, retrieving from Twitter")
             tweet = self.get_tweet_from_api(id)
-            self.save_tweet(id, tweet)
+            if tweet:
+                self.save_tweet(id, tweet)
+            else:
+                log.info(f"Couldn't get_tweet {id} from Twitter or DB")
+                return None
         return tweet
-    
+
+    def get_tweet_with_context(self, id):
+        """Gets a list of a tweet in thread context, with all recursive parent tweets. The list
+        is in order with the root tweet first and the actual requested tweet last. Returns an
+        empty list if there is no match, and a partial list """
+        tweets = []
+        tweet = self.get_tweet(id)
+        if not tweet:
+            log.warn(f"Failed to get tweet {id} with context")
+            return tweets
+
+        tweets.append(tweet)
+        while tweet.in_reply_to_status_id:
+            tweet = self.get_tweet(tweet.in_reply_to_status_id)
+            if not tweet:
+                log.warn(f"Failed to get parent tweet {id} with context")
+                break
+            tweets.insert(0, tweet)
+        return tweets
 
     def save_tweet(self, id, tweet):
         """Save a tweet to the database.  If the tweet is a reply, recursively save the parent tweet
@@ -98,7 +120,7 @@ class TweetDB:
             if parent:
                 parent_user = parent.user.screen_name
             else:
-                log.Warn(f"Failed to retrieve parent tweet {tweet.in_reply_to_status_id}, skipping")
+                log.warn(f"Failed to retrieve parent tweet {tweet.in_reply_to_status_id}, skipping")
 
         log.info(f"Saving tweet {id} to DB")
         self.c.execute(query, (
