@@ -49,3 +49,16 @@ async def create_completion(prompt, engine="text-davinci-003", max_tokens=200, t
     except aiohttp.client_exceptions.ContentTypeError:
         return None
     return r
+
+async def create_embedding(text, model="text-embedding-ada-002"):
+    url = "https://api.openai.com/v1/embeddings"
+    headers = {"Content-Type": "application/json"}
+    json = {
+        "input": text,
+        "model": model,
+    }
+    try:
+        r = await openai_request("POST", url, json, headers)
+    except aiohttp.client_exceptions.ContentTypeError:
+        return None
+    return r
