@@ -1,10 +1,20 @@
-import asyncio
-import datetime
-import json
-import sqlite3
-import datetime
+import glog as log
 
 from . import gpt
+from . import embeddings
+
+# singleton
+db = None
+
+def get_db():
+    global db
+    if db is not None:
+        return db
+    else:
+        db = embeddings.EmbeddingDB()
+        return db
+
+
 
 async def rate_tweet(tweet):
     prompt = """We want to identify the absolute best, most interesting tweets about AI.
@@ -78,4 +88,14 @@ NEW CONTENT:"""
 
 async def handle_tweet(tweet, client):
     url = f"https://twitter.com/{tweet.user.screen_name}/status/{tweet.id}"
-    client.loop.create_task(client.get_channel(1047786399266512956).send(url))
+
+    db = get_db()
+    embedding = await db.get_embedding(tweet.full_text)
+    distance = None
+    if embedding is not None:
+        text, distance = db.get_nearest(embedding)
+        log.info(f"Closest match for '{tweet.full_text}' is '{text}' with distance {distance}")
+        db.add(tweet.full_text, embedding)
+
+    if distance is None or distance > 0.5:
+        client.loop.create_task(client.get_channel(1047786399266512956).send(url))
