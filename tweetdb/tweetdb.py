@@ -7,10 +7,17 @@
 import sqlite3
 import json
 import tweepy
-import tweepy
+import time
 
 import glog as log
 log.setLevel("INFO")
+
+def get_api():
+    """Returns a tweepy.API object for the authenticated user"""
+    bearer_token = json.load(open("twitter_secrets.json"))["bearer_token"]
+    auth = tweepy.OAuth2BearerHandler(bearer_token)
+    api = tweepy.API(auth)
+    return api
 
 class TweetDB:
     def __init__(self, api, dbfile="tweetdb.sqlite"):
@@ -27,6 +34,7 @@ class TweetDB:
                 parent_id INTEGER,
                 parent_user TEXT,
                 timestamp DATETIME,
+                last_update DATETIME,
                 url TEXT,
                 serialized TEXT)""")
         # create some indexes
@@ -93,6 +101,43 @@ class TweetDB:
             tweets.insert(0, tweet)
         return tweets
 
+    def update_tweets(self, delta=3600, delay=5):
+        """Update all tweets in the database that are at least an hour old and have not been updated."""
+        # ensure the creation time is >1 hour ago, and the update time is null or <1 hour from the creation time.
+        tweets = self.c.execute("SELECT id FROM tweets WHERE timestamp < datetime('now', '-1 hour') AND (last_update IS NULL OR last_update < datetime(timestamp, '+1 hour'))")
+
+        for tweet in tweets.fetchall():
+            log.info(f"Updating tweet {tweet[0]}")
+            update = self.get_tweet_from_api(tweet[0])
+            if update is not None:
+                self.update_tweet(update)
+            else:
+                self.update_tweet_timestamp(tweet[0])
+            time.sleep(delay)
+    
+
+    def update_tweet(self, tweet):
+        """Update a tweet in the database.  This will update the last_update timestamp."""
+        query = """
+        UPDATE tweets SET
+            last_update = datetime('now'),
+            serialized = ?
+        WHERE id = ?"""
+        self.c.execute(query, (json.dumps(tweet._json), tweet.id))
+        self.db.commit()
+
+    def update_tweet_timestamp(self, tweetid):
+        """Update the timestamp of a tweet in the database.  This will update the timestamp
+        to the current time."""
+        query = """
+        UPDATE tweets SET
+            timestamp = datetime('now')
+        WHERE id = ?"""
+        self.c.execute(query, (tweetid, ))
+        self.db.commit()
+
+
+
     def save_tweet(self, id, tweet):
         """Save a tweet to the database.  If the tweet is a reply, recursively save the parent tweet
         if it does not already exist in the db."""
@@ -105,10 +150,9 @@ class TweetDB:
             timestamp,
             url,
             serialized
-        ) VALUES (?, ?, ?, ?, ?, ?, ?)"""
+        ) VALUES (?, ?, ?, ?, datetime('now'), ?, ?)"""
 
         # serialize the tweet
-        serialized = json.dumps(tweet._json)
         url = f"https://twitter.com/{tweet.user.screen_name}/status/{tweet.id}"
 
         # this will recurse a lot when we have a long thread we haven't seen yet.
@@ -128,8 +172,12 @@ class TweetDB:
             tweet.user.screen_name,
             tweet.in_reply_to_status_id,
             parent_user,
-            tweet.created_at,
             url,
-            serialized))
+            json.dumps(tweet._json)))
         self.db.commit()
 
+if __name__ == "__main__":
+    api = get_api()
+    db = TweetDB(api)
+    print("Updating tweets...")
+    db.update_tweets()

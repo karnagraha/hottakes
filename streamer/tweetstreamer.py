@@ -46,13 +46,13 @@ class Streamer(tweepy.asynchronous.AsyncStreamingClient):
             return
         log.info(f"Received tweet {tweet['id']} on tag {tag}")
         
-        tweet = self.tweetdb.get_tweet(tweet["id"])
-        if tweet is None:
-            log(f"Failed to get_tweet for {tweet['id']}")
+        content = self.tweetdb.get_tweet(tweet["id"])
+        if content is None:
+            log.info(f"Failed to get_tweet for {tweet['id']}")
             return
 
         # enqueue tweet and tag
-        await self.queue.put((tweet, tag))
+        await self.queue.put((content, tag))
 
     async def set_rules(self, new_rules):
         # get the existing rules
