@@ -1,6 +1,6 @@
 import re
 
-from . import asyncopenai as openai
+import asyncopenai.asyncopenai as openai
 
 async def send_yn_prompt(prompt):
     r = await send_prompt(prompt)

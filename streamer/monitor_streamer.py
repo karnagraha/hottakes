@@ -6,8 +6,6 @@ import tweepy
 from . import tweetstreamer
 from . import contentai
 from . import contentwhitepill
-from . import contentxlr8harder
-
 
 
 async def monitor_stream(client):
@@ -22,19 +20,13 @@ async def monitor_stream(client):
             value="lang:en -is:retweet (whitepill OR white pill OR human flourishing OR techno optimism OR techno optimist OR techno-optimism OR futurism OR futurist OR #todayinhistory OR cybernetic) -mint -nft -crypto -bitcoin -ethereum",
             tag="whitepill"
         ),
-        tweepy.StreamRule(
-            value="xlr8harder -mint -nft -crypto -bitcoin -ethereum",
-            tag="xlr8harder"
-        )
     ]
 
     s = tweetstreamer.Streamer(tweetstreamer.get_bearer_token())
     await s.set_rules(rules)
     async for tweet, tag in s:
         url = f"https://twitter.com/{tweet.user.screen_name}/status/{tweet.id}"
-        if tag == "xlr8harder":
-            await contentxlr8harder.handle_tweet(tweet, client)
-        elif tweet.in_reply_to_status_id is not None:
+        if tweet.in_reply_to_status_id is not None:
             print(f"Skipping reply: {url}")
             continue
         elif tag == "ai":

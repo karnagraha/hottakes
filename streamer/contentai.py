@@ -5,6 +5,7 @@ from . import embeddings
 
 # singleton
 db = None
+category_db = None
 
 def get_db():
     global db
@@ -13,6 +14,14 @@ def get_db():
     else:
         db = embeddings.EmbeddingDB()
         return db
+
+def get_category_db():
+    global category_db
+    if category_db is not None:
+        return category_db
+    else:
+        category_db = embeddings.EmbeddingDB(collection_name="categories")
+        return category_db
 
 
 
@@ -87,15 +96,23 @@ NEW CONTENT:"""
     return await gpt.send_prompt(prompt)
 
 async def handle_tweet(tweet, client):
+
     url = f"https://twitter.com/{tweet.user.screen_name}/status/{tweet.id}"
 
     db = get_db()
     embedding = await db.get_embedding(tweet.full_text)
-    distance = None
+
+    score = None
+    category = category_score = None
     if embedding is not None:
-        text, distance = db.get_nearest(embedding)
-        log.info(f"Closest match for '{tweet.full_text}' is '{text}' with distance {distance}")
+        # categorize
+        category_db = get_category_db()
+        category, category_score = category_db.get_nearest(embedding)
+        text, score = db.get_nearest(embedding)
         db.add(tweet.full_text, embedding)
 
-    if distance is None or distance > 0.5:
-        client.loop.create_task(client.get_channel(1047786399266512956).send(url))
+    if (score is None or score < 0.86) and category_score > 0.78:
+        client.loop.create_task(client.get_channel(1047786399266512956).send(
+            "Similarity: " + str(score) + "\nCategory: " + category + " (" + str(category_score) + ") " + url))
+    else:
+        log.info(f"Skipping tweet {url} similarity {score} category {category} ({category_score})")

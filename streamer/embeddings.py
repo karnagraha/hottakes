@@ -1,4 +1,4 @@
-from . import asyncopenai as openai
+import asyncopenai.asyncopenai as openai
 import glog as log 
 import uuid
 from qdrant_client import QdrantClient

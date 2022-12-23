@@ -2,12 +2,10 @@ import asyncio
 import datetime
 import json
 import re
-import sys
 import glog as log
 
 import discord
 from streamer import monitor_streamer
-from streamer import contentxlr8harder
 
 
 client = discord.Client(intents=discord.Intents.default())
@@ -30,14 +28,11 @@ async def on_reaction_add(reaction, user):
         return
 
     print(f"reaction added: {reaction}")
-    if reaction.message.channel.id == 1049196639652425749:
-        contentxlr8harder.handle_discord_reaction(reaction, client)
-    else:
-        match = re.search(r"https://twitter.com/[^/]+/status/(\d+)", reaction.message.content)
-        if match:
-            url = match.group(0)
-            print(f"User {user} liked {url}")
-            await reaction.message.channel.send("Thanks for the like!")
+    match = re.search(r"https://twitter.com/[^/]+/status/(\d+)", reaction.message.content)
+    if match:
+        url = match.group(0)
+        print(f"User {user} liked {url}")
+        await reaction.message.channel.send("Thanks for the like!")
 
 @client.event
 async def on_message(message):
@@ -52,6 +47,7 @@ async def on_message(message):
 activity = datetime.datetime.now()
 
 # We get stalls on the twitter feed, this is a workaround for now.
+# TODO: we seem to stall out sometimes for other reasons as well, this needs more investigation.
 async def activity_check(max_idle=600):
     global activity
     while True:
@@ -66,7 +62,6 @@ def main():
 
     # wait for all tasks to exit
     loop = asyncio.get_event_loop()
-    #loop.run_until_complete(loop.shutdown_asyncgens())
     loop.run_until_complete(activity_check())
     loop.close()
 
