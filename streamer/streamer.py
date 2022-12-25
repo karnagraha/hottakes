@@ -3,7 +3,6 @@ import asyncio
 import functools
 import json
 
-import tweetdb
 import tweepy
 import tweepy.asynchronous
 import glog as log
@@ -28,8 +27,7 @@ class Streamer(tweepy.asynchronous.AsyncStreamingClient):
         super().__init__(bearer_token, **kwargs)
         self.started = False
         self.queue = asyncio.Queue()
-        self.api = get_api()   # TODO do we really need this?
-        self.tweetdb = tweetdb.TweetDB(self.api)
+        self.api = get_api()
 
     async def set_rules(self, new_rules):
         log.info(f"Setting rules to {new_rules}.")
@@ -54,6 +52,17 @@ class Streamer(tweepy.asynchronous.AsyncStreamingClient):
             self.started = True
             self.filter()
         return self
+
+    def get_tweet(self, id):
+        """Get a tweet from twitter, bypassing the database.
+        Returns a tweepy.models.Status object, or None if error."""
+        log.info(f"Retrieving tweet {id} from Twitter")
+        try:
+            tweet = self.api.get_status(id, tweet_mode="extended")
+        except tweepy.TweepyException as e:
+            log.warn(f"Failed to retrieve tweet {id}: {e}")
+            return None
+        return tweet
     
     async def __anext__(self):
         return await self.queue.get()
@@ -79,7 +88,7 @@ class Streamer(tweepy.asynchronous.AsyncStreamingClient):
             return
         log.info(f"Received tweet {tweet['id']} on tag {tag}")
         
-        content = self.tweetdb.get_tweet(tweet["id"])
+        content = self.get_tweet(tweet["id"])
         if content is None:
             log.info(f"Failed to get_tweet for {tweet['id']}")
             return

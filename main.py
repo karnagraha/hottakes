@@ -9,7 +9,7 @@ import asyncopenai.asyncopenai as openai
 
 import streamer.streamer as streamer
 import streamer.monitor as monitor
-from streamer.content import Content
+from streamer.channel import Content
 
 def get_bot_token():
     with open("discord_secrets.json") as f:
@@ -25,10 +25,10 @@ async def on_ready():
     s = streamer.Streamer(streamer.get_bearer_token())
     log.info(f"initializing monitor")
     m = monitor.Monitor(client, s)
-    log.info(f"loading streams")
-    await m.load_streams()
-    log.info("Monitoring streams.")
-    asyncio.get_event_loop().create_task(m.monitor_stream())
+    log.info(f"loading content channels")
+    await m.load_channels()
+    log.info("Monitoring stream.")
+    asyncio.get_event_loop().create_task(m.monitor_streamer())
 
 @client.event
 async def on_reaction_add(reaction, user):
