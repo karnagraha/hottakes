@@ -101,7 +101,7 @@ def main():
     # TODO this really sucks.
     for category in ["white pill", "human flourishing", "good news", "techno optimism", "futurism", "today in history", "cybernetic"]:
         #log.info(f"adding category {category}")
-        #asyncio.run(add_category(ai, category))
+        #asyncio.run(add_category(whitepill, category))
         pass
 
     # this starts everything.
