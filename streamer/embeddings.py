@@ -56,7 +56,8 @@ class EmbeddingDB:
         else:
             return None, None
 
-    async def get_embedding(self, text):
+    @classmethod
+    async def get_embedding(cls, text):
         r = await openai.create_embedding(text)
         if r is not None:
             embedding = r["data"][0]["embedding"]

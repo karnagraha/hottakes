@@ -5,22 +5,30 @@ import re
 import glog as log
 
 import discord
-from streamer import monitor_streamer
+import asyncopenai.asyncopenai as openai
 
-
-client = discord.Client(intents=discord.Intents.default())
-
+import streamer.streamer as streamer
+import streamer.monitor as monitor
+from streamer.content import Content
 
 def get_bot_token():
     with open("discord_secrets.json") as f:
         secrets = json.load(f)
     return secrets["bot_token"]
 
+client = discord.Client(intents=discord.Intents.default())
 
+# on_ready initializes the bot and starts the streamer
 @client.event
 async def on_ready():
-    print(f"We have logged in as {client.user}")
-    asyncio.get_event_loop().create_task(monitor_streamer.monitor_stream(client))
+    log.info(f"We have logged in as {client.user}, initiating streamer")
+    s = streamer.Streamer(streamer.get_bearer_token())
+    log.info(f"initializing monitor")
+    m = monitor.Monitor(client, s)
+    log.info(f"loading streams")
+    await m.load_streams()
+    log.info("Monitoring streams.")
+    asyncio.get_event_loop().create_task(m.monitor_stream())
 
 @client.event
 async def on_reaction_add(reaction, user):
@@ -57,7 +65,46 @@ async def activity_check(max_idle=600):
             log.warn("No activity for %d seconds, exiting", max_idle)
             return
 
+async def add_category(stream, category):
+    r = await openai.create_embedding(category)
+    if r is not None:
+        embedding = r["data"][0]["embedding"]
+    stream.add_category(category, embedding)
+
+
 def main():
+    # create initial content stream rules.
+    ai = Content(
+        client,
+        "ai",
+        1047786399266512956,
+        0.86,
+        0.781, 
+        'lang:en -is:retweet -is:reply -NFT (artificial intelligence OR technocapital OR ai safety OR superintelligence OR transhumanism OR transhumanist OR "e/acc" OR effective accelerationism) -mint -nft -crypto -bitcoin -ethereum -drop -airdrop',
+    )
+    ai.to_db()
+    for category in ["artificial intelligence", "technocapital", "ai safety", "superintelligence", "effective accelerationism", "e/acc", "transhumanism"]:
+        # just run the async command directly
+        #log.info(f"adding category {category}")
+        #asyncio.run(add_category(ai, category))
+        pass
+
+    whitepill = Content(
+        client,
+        "whitepill",
+        1048696123121995836,
+        0.86,
+        0.781,
+        "lang:en -is:retweet (whitepill OR white pill OR human flourishing OR techno optimism OR techno optimist OR techno-optimism OR futurism OR futurist OR #todayinhistory OR cybernetic) -mint -nft -crypto -bitcoin -ethereum -drop -airdrop",
+    )
+    whitepill.to_db()
+    # TODO this really sucks.
+    for category in ["white pill", "human flourishing", "good news", "techno optimism", "futurism", "today in history", "cybernetic"]:
+        #log.info(f"adding category {category}")
+        #asyncio.run(add_category(ai, category))
+        pass
+
+    # this starts everything.
     c = client.run(get_bot_token())
 
     # wait for all tasks to exit
