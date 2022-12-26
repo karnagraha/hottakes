@@ -35,16 +35,14 @@ async def on_reaction_add(reaction, user):
     if reaction.message.author != client.user:
         return
 
-    print(f"reaction added: {reaction}")
     match = re.search(r"https://twitter.com/[^/]+/status/(\d+)", reaction.message.content)
     if match:
         url = match.group(0)
-        print(f"User {user} liked {url}")
-        await reaction.message.channel.send("Thanks for the like!")
+        log.info(f"User {user} reacted to {url}")
 
 @client.event
 async def on_message(message):
-    print(f"Message: {message.content} Channel: {message.channel.id}")
+    log.info(f"#{message.channel.name}:{message.channel.id} <{message.author}> {message.content}")
     if message.author == client.user:
         activity = datetime.datetime.now()
         return
