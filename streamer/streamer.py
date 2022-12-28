@@ -81,17 +81,21 @@ class Streamer(tweepy.asynchronous.AsyncStreamingClient):
     async def on_data(self, data):
         data = json.loads(data)
         try:
-            tag = data["matching_rules"][0]["tag"]
-            tweet = data["data"]
-        except (KeyError, IndexError) as e:
+            rules = data["matching_rules"]
+            id = data["data"]["id"]
+        except KeyError as e:
             log.warn(f"Error reading stream content: {e}")
             return
-        log.info(f"Received tweet {tweet['id']} on tag {tag}")
         
-        content = self.get_tweet(tweet["id"])
+        try:
+            content = self.get_tweet(id)
+        except KeyError:
+            log.info(f"Received non-tweet {id}")
+            return
         if content is None:
-            log.info(f"Failed to get_tweet for {tweet['id']}")
+            log.info(f"Failed to get_tweet for {id}")
             return
 
-        # enqueue tweet and tag
-        await self.queue.put((content, tag))
+        for tag in rules:
+            log.info(f"Received tweet {id} on tag {tag['tag']}")
+            await self.queue.put((content, tag))

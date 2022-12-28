@@ -69,38 +69,55 @@ async def add_category(stream, category):
         embedding = r["data"][0]["embedding"]
     stream.add_category(category, embedding)
 
+def create_channel(label, channel, search, categories):
+    log.info(f"creating channel {label} {channel} {search} {categories}")
+    repeat_threshold = 0.86
+    category_threshold = 0.781
+    full_search = f"lang:en -is:retweet ({search}) -NFT -mint -crypto -bitcoin -ethereum -drop -airdrop"
+    c = Content(client, label, channel, repeat_threshold, category_threshold, full_search)
+    c.to_db()
+    c.clear_categories()
+    for category in categories:
+        log.info(f"adding {label} category {category}")
+        asyncio.run(add_category(c, category))
+        pass
+    return c
 
 def main():
     # create initial content stream rules.
-    ai = Content(
-        client,
+
+
+    create_channel(
+        "companies",
+        1047786399266512956,
+        "OpenAI or DeepMind or GoogleAI",
+        ["openai", "deepmind", "googleai"]
+    )
+    create_channel(
+        "singularity",
+        1057180785695789086,
+        "singularity OR transhuman OR technocapital OR techno-capital",
+        ["singularity", "transhumanism", "technocapital"],
+    )
+    create_channel(
+        "eacc",
+        1057152611469512767,
+        '"e/acc" OR effective accelerationism',
+        ["e/acc", "effective accelerationism"],
+    )
+    create_channel(
         "ai",
         1047786399266512956,
-        0.86,
-        0.781, 
-        'lang:en -is:retweet -is:reply -NFT (artificial intelligence OR technocapital OR ai safety OR superintelligence OR transhumanism OR transhumanist OR "e/acc" OR effective accelerationism) -mint -nft -crypto -bitcoin -ethereum -drop -airdrop',
+        'artificial intelligence OR technocapital OR techno capital OR superintelligence OR super intelligence OR LLM OR Language Model or ML',
+        ["artificial intelligence", "technocapital", "superintelligence", "LLM", "Language Model", "ML"],
     )
-    ai.to_db()
-    for category in ["artificial intelligence", "technocapital", "ai safety", "superintelligence", "effective accelerationism", "e/acc", "transhumanism"]:
-        # just run the async command directly
-        #log.info(f"adding category {category}")
-        #asyncio.run(add_category(ai, category))
-        pass
-
-    whitepill = Content(
-        client,
+    create_channel(
         "whitepill",
         1048696123121995836,
-        0.86,
-        0.781,
-        "lang:en -is:retweet (whitepill OR white pill OR human flourishing OR techno optimism OR techno optimist OR techno-optimism OR futurism OR futurist OR #todayinhistory OR cybernetic) -mint -nft -crypto -bitcoin -ethereum -drop -airdrop",
+        "whitepill OR white pill OR human flourishing OR techno optimism OR techno optimist OR techno-optimism OR futurism OR futurist OR #todayinhistory",
+        ["white pill", "human flourishing", "good news", "techno optimism", "futurism", "today in history"],
     )
-    whitepill.to_db()
-    # TODO this really sucks.
-    for category in ["white pill", "human flourishing", "good news", "techno optimism", "futurism", "today in history", "cybernetic"]:
-        #log.info(f"adding category {category}")
-        #asyncio.run(add_category(whitepill, category))
-        pass
+
 
     # this starts everything.
     c = client.run(get_bot_token())

@@ -75,11 +75,19 @@ class Content:
     async def get_embedding(self, text):
         r = await openai.create_embedding(text)
         if r is not None:
-            embedding = r["data"][0]["embedding"]
-            return embedding
+            try:
+                embedding = r["data"][0]["embedding"]
+            except (KeyError, IndexError) as e:
+                log.error(f"Error getting embedding: {e}")
+            else:
+                return embedding
+        return None
 
     def add_category(self, category, embedding):
         return self.category_db.add(category, embedding)
+
+    def clear_categories(self):
+        self.category_db.reset()
 
     def check_category(self, embedding):
         """Returns whether the embedding matches a category, and the nearest category name and score."""

@@ -18,14 +18,17 @@ class EmbeddingDB:
                 exists = True
                 break
         if not exists:
-            log.info("Creating collection: " + self.collection_name)
-            self.client.recreate_collection(
-                collection_name=self.collection_name,
-                vectors_config=VectorParams(size=1536, distance=Distance.COSINE),
-            )
+            self._create_collection()
         collection_info = self.client.get_collection(collection_name=self.collection_name)
         log.info("Collection info: " + str(collection_info))
     
+
+    def _create_collection(self):
+        self.client.recreate_collection(
+            collection_name=self.collection_name,
+            vectors_config=VectorParams(size=1536, distance=Distance.COSINE),
+        )
+
     def add(self, text, embedding):
         # generate a random uuid, for whatever reason qdrant doesn't seem to handle autogenerating
         # ids for us.
@@ -55,9 +58,14 @@ class EmbeddingDB:
             return results[0].payload["text"], score
         else:
             return None, None
+    
+    def reset(self):
+        self.client.delete_collection(self.collection_name)
+        self._create_collection()
 
     async def get_embedding(self, text):
         r = await openai.create_embedding(text)
         if r is not None:
             embedding = r["data"][0]["embedding"]
             return embedding
+    
