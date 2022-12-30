@@ -98,4 +98,4 @@ class Streamer(tweepy.asynchronous.AsyncStreamingClient):
 
         for tag in rules:
             log.info(f"Received tweet {id} on tag {tag['tag']}")
-            await self.queue.put((content, tag))
+            await self.queue.put((content, tag['tag']))

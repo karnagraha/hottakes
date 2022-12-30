@@ -108,7 +108,7 @@ def main():
     create_channel(
         "ai",
         1047786399266512956,
-        'artificial intelligence OR technocapital OR techno capital OR superintelligence OR super intelligence OR LLM OR Language Model or ML',
+        'artificial intelligence OR technocapital OR techno capital OR superintelligence OR super intelligence OR LLM OR Language Model OR ML',
         ["artificial intelligence", "technocapital", "superintelligence", "LLM", "Language Model", "ML"],
     )
     create_channel(
