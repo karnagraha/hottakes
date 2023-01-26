@@ -30,8 +30,9 @@ class TweetDB:
         # e.g. [("https://twitter.com/elonmusk/status/123", "I love Tesla", "positive", "✅")]
         tweets = []
         for row in self.conn.execute(
-            "SELECT url, tweet, tag, reaction FROM tweets WHERE tag = ? and reaction IN ?",
-            (tag, str(tuple(reactions))),
+            "SELECT url, tweet, tag, reaction FROM tweets WHERE tag='%s' AND reaction IN %s"
+            % (tag, str(tuple(reactions)))
         ):
             tweets.append([row[0], row[1], row[2], row[3]])
+
         return tweets

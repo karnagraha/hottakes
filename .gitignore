@@ -5,3 +5,5 @@ __pycache__
 *.sqlite
 scrape.py
 qdrant_storage
+classifier/models/
+*.csv

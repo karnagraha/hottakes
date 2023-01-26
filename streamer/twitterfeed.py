@@ -9,6 +9,7 @@ import glog as log
 
 from streamer.tweetdb import TweetDB
 
+
 @functools.lru_cache(maxsize=None)
 def get_bearer_token():
     # get bearer token from twitter_secrets.json
@@ -17,19 +18,21 @@ def get_bearer_token():
     bearer_token = secrets["bearer_token"]
     return bearer_token
 
+
 @functools.lru_cache(maxsize=None)
-def get_api():
-    token = get_bearer_token()
-    auth = tweepy.OAuth2BearerHandler(token)
+def get_api(bearer_token):
+    auth = tweepy.OAuth2BearerHandler(bearer_token)
     api = tweepy.API(auth)
     return api
 
-class Streamer(tweepy.asynchronous.AsyncStreamingClient):
-    def __init__(self, bearer_token, **kwargs):
-        super().__init__(bearer_token, **kwargs)
+
+class TwitterFeed(tweepy.asynchronous.AsyncStreamingClient):
+    def __init__(self, **kwargs):
+        self.bearer_token = get_bearer_token()
+        super().__init__(self.bearer_token, **kwargs)
         self.started = False
         self.queue = asyncio.Queue()
-        self.api = get_api()
+        self.api = get_api(self.bearer_token)
         self.tweetdb = TweetDB()
 
     async def set_rules(self, new_rules):
@@ -66,10 +69,10 @@ class Streamer(tweepy.asynchronous.AsyncStreamingClient):
             log.warn(f"Failed to retrieve tweet {id}: {e}")
             return None
         return tweet
-    
+
     async def __anext__(self):
         return await self.queue.get()
-    
+
     async def on_connect(self):
         log.info("Connected to Twitter streaming API")
 
@@ -89,7 +92,7 @@ class Streamer(tweepy.asynchronous.AsyncStreamingClient):
         except KeyError as e:
             log.warn(f"Error reading stream content: {e}")
             return
-        
+
         try:
             content = self.get_tweet(id)
         except KeyError:
@@ -101,9 +104,8 @@ class Streamer(tweepy.asynchronous.AsyncStreamingClient):
 
         for tag in rules:
             log.info(f"Received tweet {id} on tag {tag['tag']}")
-            await self.queue.put((content, tag['tag']))
-        
-        
+            await self.queue.put((content, tag["tag"]))
+
         # save the first tag in rules, along with the url and the full text
         tag = rules[0]["tag"]
         url = f"https://twitter.com/{content.user.screen_name}/status/{content.id}"

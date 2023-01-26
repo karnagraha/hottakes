@@ -1,13 +1,26 @@
 import asyncopenai.asyncopenai as openai
-import glog as log 
+import glog as log
 import uuid
 from qdrant_client import QdrantClient
 from qdrant_client.http.models import PointStruct, Distance, UpdateStatus, VectorParams
 
+
+def get_qdrant_api_key():
+    with open("qdrant_secrets.json") as f:
+        secrets = json.load(f)
+    return secrets["api_key"]
+
+
 class EmbeddingDB:
     def __init__(self, collection_name="hottakes"):
         self.client = QdrantClient(host="localhost", port=6333)
-        self.collection_name=collection_name
+        # self.api_key = get_qdrant_api_key()
+        # self.client = QdrantClient(
+        #    host="5011b95c-b05d-474e-863b-07189e741f3d.us-east-1-0.aws.cloud.qdrant.io",
+        #    port=6333,
+        #    api_key=self.api_key,
+        # )
+        self.collection_name = collection_name
 
         collections = self.client.get_collections()
         log.info("Collections: " + str(collections))
@@ -19,9 +32,10 @@ class EmbeddingDB:
                 break
         if not exists:
             self._create_collection()
-        collection_info = self.client.get_collection(collection_name=self.collection_name)
+        collection_info = self.client.get_collection(
+            collection_name=self.collection_name
+        )
         log.info("Collection info: " + str(collection_info))
-    
 
     def _create_collection(self):
         self.client.recreate_collection(
@@ -37,7 +51,7 @@ class EmbeddingDB:
         operation_info = self.client.upsert(
             collection_name=self.collection_name,
             wait=True,
-            points=[PointStruct(id=id, vector=embedding, payload={"text": text})]
+            points=[PointStruct(id=id, vector=embedding, payload={"text": text})],
         )
         assert operation_info.status == UpdateStatus.COMPLETED
 
@@ -51,14 +65,11 @@ class EmbeddingDB:
             id = search_result[0].id
             score = search_result[0].score
             # retrieve the text and distance
-            results = self.client.retrieve(
-                self.collection_name,
-                ids=[id]
-            )
+            results = self.client.retrieve(self.collection_name, ids=[id])
             return results[0].payload["text"], score
         else:
             return None, None
-    
+
     def reset(self):
         self.client.delete_collection(self.collection_name)
         self._create_collection()
@@ -68,4 +79,3 @@ class EmbeddingDB:
         if r is not None:
             embedding = r["data"][0]["embedding"]
             return embedding
-    
