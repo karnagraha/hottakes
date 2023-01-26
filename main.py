@@ -115,12 +115,6 @@ filters = [
         "categories": ["openai", "deepmind", "googleai"],
     },
     {
-        "tag": "singularity",
-        "channel": 1057180785695789086,
-        "filter": 'singularity OR transhuman OR technocapital OR "techno capital"',
-        "categories": ["singularity", "transhumanism", "technocapital"],
-    },
-    {
         "tag": "eacc",
         "channel": 1057152611469512767,
         "filter": '"e/acc" OR effective accelerationism',
@@ -141,7 +135,7 @@ filters = [
     {
         "tag": "whitepill",
         "channel": 1048696123121995836,
-        "filter": "whitepill OR white pill OR human flourishing OR techno optimism OR techno optimist OR techno-optimism OR futurism OR futurist OR #todayinhistory",
+        "filter": 'whitepill OR white pill OR optimism OR human flourishing OR "techno optimism" OR optimist OR "techno optimist" OR futurism OR futurist OR #todayinhistory',
         "categories": [
             "white pill",
             "human flourishing",

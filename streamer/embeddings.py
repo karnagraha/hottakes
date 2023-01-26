@@ -11,6 +11,18 @@ def get_qdrant_api_key():
     return secrets["api_key"]
 
 
+async def get_embedding(text):
+    r = await openai.create_embedding(text)
+    if r is not None:
+        try:
+            embedding = r["data"][0]["embedding"]
+        except (KeyError, IndexError) as e:
+            log.error(f"Error getting embedding: {e}")
+        else:
+            return embedding
+    return None
+
+
 class EmbeddingDB:
     def __init__(self, collection_name="hottakes"):
         self.client = QdrantClient(host="localhost", port=6333)
@@ -73,9 +85,3 @@ class EmbeddingDB:
     def reset(self):
         self.client.delete_collection(self.collection_name)
         self._create_collection()
-
-    async def get_embedding(self, text):
-        r = await openai.create_embedding(text)
-        if r is not None:
-            embedding = r["data"][0]["embedding"]
-            return embedding

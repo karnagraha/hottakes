@@ -29,17 +29,6 @@ class ContentFilter:
         )
         self.repeat_db = embeddings.EmbeddingDB(collection_name=self.tag + "_repeats")
 
-    async def get_embedding(self, text):
-        r = await openai.create_embedding(text)
-        if r is not None:
-            try:
-                embedding = r["data"][0]["embedding"]
-            except (KeyError, IndexError) as e:
-                log.error(f"Error getting embedding: {e}")
-            else:
-                return embedding
-        return None
-
     def add_category(self, category, embedding):
         return self.category_db.add(category, embedding)
 
@@ -76,13 +65,12 @@ class ContentFilter:
 
     async def handle_tweet(self, tweet):
         url = f"https://twitter.com/{tweet.user.screen_name}/status/{tweet.id}"
-        log.info(f"Got tweet {url}")
-        embedding = await self.get_embedding(tweet.full_text)
+        embedding = await embeddings.get_embedding(tweet.full_text)
         if embedding is None:
             log.error(f"Error getting embedding for {url}")
             return
         matches_repeat, text, repeat_score = self.check_repeat(embedding)
-        log.info(f"Repeat? {matches_repeat} {repeat_score}.")
+        log.info(f"Repeat? {matches_repeat} {repeat_score} {url}.")
         self.add_repeat(tweet.full_text, embedding)
 
         if self.tag in ["ai", "companies"]:
@@ -105,7 +93,7 @@ class ContentFilter:
             result = "n/a"
             matches_category, category, category_score = self.check_category(embedding)
 
-        log.info(f"Got category: {matches_category} {category} {category_score}.")
+        log.info(f"category: {matches_category} {category} {category_score} {url}.")
 
         if not matches_repeat and matches_category:
             return (

@@ -62,7 +62,6 @@ class TwitterFeed(tweepy.asynchronous.AsyncStreamingClient):
     def get_tweet(self, id):
         """Get a tweet from twitter, bypassing the database.
         Returns a tweepy.models.Status object, or None if error."""
-        log.info(f"Retrieving tweet {id} from Twitter")
         try:
             tweet = self.api.get_status(id, tweet_mode="extended")
         except tweepy.TweepyException as e:
@@ -77,11 +76,11 @@ class TwitterFeed(tweepy.asynchronous.AsyncStreamingClient):
         log.info("Connected to Twitter streaming API")
 
     async def on_error(self, status_code):
-        log("Error from Twitter: %s" % status_code)
+        log.info("Error from Twitter: %s" % status_code)
         return True
 
     async def on_timeout(self):
-        log("Timeout from Twitter")
+        log.info("Timeout from Twitter")
         return True  # Don't kill the stream
 
     async def on_data(self, data):
@@ -96,14 +95,14 @@ class TwitterFeed(tweepy.asynchronous.AsyncStreamingClient):
         try:
             content = self.get_tweet(id)
         except KeyError:
-            log.info(f"Received non-tweet {id}")
+            log.warn(f"Received non-tweet {id}")
             return
         if content is None:
-            log.info(f"Failed to get_tweet for {id}")
+            log.warn(f"Failed to get_tweet for {id}")
             return
 
         for tag in rules:
-            log.info(f"Received tweet {id} on tag {tag['tag']}")
+            log.info(f"[{tag['tag']}] received tweet {id}")
             await self.queue.put((content, tag["tag"]))
 
         # save the first tag in rules, along with the url and the full text
