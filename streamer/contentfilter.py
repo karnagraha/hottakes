@@ -32,15 +32,15 @@ class ContentFilter:
     def add_category(self, category, embedding):
         return self.category_db.add(category, embedding)
 
-    def clear_categories(self):
-        self.category_db.reset()
-
     def check_category(self, embedding):
         """Returns whether the embedding matches a category, and the nearest category name and score."""
         category, score = self.category_db.get_nearest(embedding)
         if score is None:
             return False, None, None
         return score > self.category_threshold, category, score
+
+    def clear_categories(self):
+        self.category_db.reset()
 
     def add_repeat(self, text, embedding):
         return self.repeat_db.add(text, embedding)

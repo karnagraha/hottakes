@@ -1,7 +1,6 @@
 # dispatches tweets from the feed to channels.
 
 import tweepy
-import glog as log
 
 from . import contentfilter
 
