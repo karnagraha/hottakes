@@ -7,6 +7,8 @@ import tweepy
 import tweepy.asynchronous
 import glog as log
 
+from streamer.tweetdb import TweetDB
+
 @functools.lru_cache(maxsize=None)
 def get_bearer_token():
     # get bearer token from twitter_secrets.json
@@ -28,6 +30,7 @@ class Streamer(tweepy.asynchronous.AsyncStreamingClient):
         self.started = False
         self.queue = asyncio.Queue()
         self.api = get_api()
+        self.tweetdb = TweetDB()
 
     async def set_rules(self, new_rules):
         log.info(f"Setting rules to {new_rules}.")
@@ -99,3 +102,10 @@ class Streamer(tweepy.asynchronous.AsyncStreamingClient):
         for tag in rules:
             log.info(f"Received tweet {id} on tag {tag['tag']}")
             await self.queue.put((content, tag['tag']))
+        
+        
+        # save the first tag in rules, along with the url and the full text
+        tag = rules[0]["tag"]
+        url = f"https://twitter.com/{content.user.screen_name}/status/{content.id}"
+        full_text = content.full_text
+        self.tweetdb.add(full_text, url, tag)
