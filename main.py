@@ -89,13 +89,13 @@ async def add_category(filter, category):
     filter.add_category(category, embedding)
 
 
-async def create_filter(label, channel, search, categories):
-    log.info(f"creating channel {label} {channel} {search} {categories}")
+async def create_filter(label, channels, search, categories):
+    log.info(f"creating filter {label} {channels} {search} {categories}")
     repeat_threshold = 0.86
     category_threshold = 0.781
     full_search = f"lang:en -is:retweet ({search}) -NFT -mint -crypto -bitcoin -ethereum -drop -airdrop"
     cf = ContentFilter(
-        label, channel, repeat_threshold, category_threshold, full_search
+        label, channels, repeat_threshold, category_threshold, full_search
     )
 
     # set up the categories in the embeddings db
@@ -110,19 +110,19 @@ async def create_filter(label, channel, search, categories):
 filters = [
     {
         "tag": "companies",
-        "channel": 1057190457110712370,
+        "channels": [1057190457110712370],
         "filter": "OpenAI OR DeepMind OR GoogleAI",
         "categories": ["openai", "deepmind", "googleai"],
     },
     {
         "tag": "eacc",
-        "channel": 1057152611469512767,
+        "channels": [1057152611469512767, 1068439457751126089],
         "filter": '"e/acc" OR effective accelerationism',
         "categories": ["e/acc", "effective accelerationism"],
     },
     {
         "tag": "ai",
-        "channel": 1047786399266512956,
+        "channels": [1047786399266512956],
         "filter": '"artificial intelligence" OR superintelligence OR "super intelligence" OR "Language Model" OR "machine learning"',
         "categories": [
             "artificial intelligence",
@@ -134,7 +134,7 @@ filters = [
     },
     {
         "tag": "whitepill",
-        "channel": 1048696123121995836,
+        "channels": [1048696123121995836],
         "filter": 'whitepill OR white pill OR optimism OR human flourishing OR "techno optimism" OR optimist OR "techno optimist" OR futurism OR futurist OR #todayinhistory',
         "categories": [
             "white pill",
@@ -153,7 +153,7 @@ async def add_filters(dispatcher):
         dispatcher.add_filter(
             await create_filter(
                 f["tag"],
-                f["channel"],
+                f["channels"],
                 f["filter"],
                 f["categories"],
             )

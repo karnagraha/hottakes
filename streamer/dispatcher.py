@@ -25,5 +25,6 @@ class Dispatcher:
             filter = self.filters[tag]
             content = await filter.handle_tweet(tweet)
             if content is not None:
-                channel = self.discord_client.get_channel(filter.channel)
-                await channel.send(content)
+                for channel_id in filter.channels:
+                    channel = self.discord_client.get_channel(channel_id)
+                    await channel.send(content)

@@ -12,14 +12,14 @@ class ContentFilter:
     def __init__(
         self,
         tag,
-        channel,
+        channels,
         repeat_threshold=0.86,
         category_threshold=0.781,
         filter="",
     ):
 
         self.tag = tag
-        self.channel = channel
+        self.channels = channels
         self.category_threshold = category_threshold
         self.repeat_threshold = repeat_threshold
         self.filter = filter  # this is the twitter search filter
