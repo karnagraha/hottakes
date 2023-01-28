@@ -14,33 +14,19 @@ class ContentFilter:
         tag,
         channels,
         repeat_threshold=0.86,
-        category_threshold=0.781,
         filter="",
+        check_classifier=True,
+        check_repeats=True,
     ):
 
         self.tag = tag
         self.channels = channels
-        self.category_threshold = category_threshold
         self.repeat_threshold = repeat_threshold
         self.filter = filter  # this is the twitter search filter
+        self.check_classifier = check_classifier
+        self.check_repeats = check_repeats
 
-        self.category_db = embeddings.EmbeddingDB(
-            collection_name=self.tag + "_categories"
-        )
         self.repeat_db = embeddings.EmbeddingDB(collection_name=self.tag + "_repeats")
-
-    def add_category(self, category, embedding):
-        return self.category_db.add(category, embedding)
-
-    def check_category(self, embedding):
-        """Returns whether the embedding matches a category, and the nearest category name and score."""
-        category, score = self.category_db.get_nearest(embedding)
-        if score is None:
-            return False, None, None
-        return score > self.category_threshold, category, score
-
-    def clear_categories(self):
-        self.category_db.reset()
 
     def add_repeat(self, text, embedding):
         return self.repeat_db.add(text, embedding)
@@ -65,50 +51,35 @@ class ContentFilter:
 
     async def handle_tweet(self, tweet):
         url = f"https://twitter.com/{tweet.user.screen_name}/status/{tweet.id}"
+
         embedding = await embeddings.get_embedding(tweet.full_text)
         if embedding is None:
             log.error(f"Error getting embedding for {url}")
             return
-        matches_repeat, text, repeat_score = self.check_repeat(embedding)
-        log.info(f"Repeat? {matches_repeat} {repeat_score} {url}.")
-        self.add_repeat(tweet.full_text, embedding)
+        if self.check_repeat:
+            matches_repeat, text, repeat_score = self.check_repeat(embedding)
+            self.add_repeat(tweet.full_text, embedding)
+            if matches_repeat:
+                log.info(f"Skipping repeat: [{repeat_score}] {url}")
+                return
 
-        if self.tag in ["ai", "companies"]:
-            result = await client.predict(self.tag, tweet.full_text)
-            if result is not None:
-                log.info(f"Classified as {result}: {tweet.full_text}")
-                if result["label"] == "positive":
-                    matches_category = True
-                    category = "positive"
-                    category_score = 1.0
-                else:
-                    matches_category = False
-                    category = "negative"
-                    category_score = 1.0
-            else:
-                matches_category = True  # TODO probably change this
-                category = "failure"
-                category_score = 1.0
+        if not self.check_classifier:
+            return url
+
+        result = await client.predict(self.tag, tweet.full_text)
+        if result is not None:
+            log.info(f"Classified as {result}: {tweet.full_text}")
+            score = result["score"]
+            match = True if result["label"] == "positive" else False
+            log.info(f"Classifier: [{match}] {score} {url}.")
         else:
-            result = "n/a"
-            matches_category, category, category_score = self.check_category(embedding)
+            # in failure case just pass the tweet through
+            match = True
+            score = 1.0
 
-        log.info(f"category: {matches_category} {category} {category_score} {url}.")
-
-        if not matches_repeat and matches_category:
-            return (
-                "Match: "
-                + str(result)
-                + "\nSimilarity: "
-                + str(repeat_score)
-                + "\nCategory: "
-                + category
-                + " ("
-                + str(category_score)
-                + ") "
-                + url
-            )
-        else:
-            log.info(
-                f"Skipping tweet {url} similarity {repeat_score} category {category} ({category_score})"
-            )
+        if not match:
+            # remove extra whitespace from tweet (\n\t, etc)
+            tweet_text = " ".join(tweet.full_text.split())
+            log.info(f"Skipping negative tweet: {url} {tweet_text}")
+            return
+        return f"Score: [{score}] Repeat [{repeat_score}]\n{url}"

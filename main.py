@@ -78,72 +78,46 @@ async def activity_check(max_idle=600):
         await asyncio.sleep(10)
         max_age = datetime.datetime.now() - datetime.delta(seconds=max_idle)
         if activity < max_age:
-            log.warn("No activity for %d seconds, exiting", max_idle)
+            log.warn(f"No activity for {max_idle} seconds, exiting")
             return
 
 
-async def add_category(filter, category):
-    r = await openai.create_embedding(category)
-    if r is not None:
-        embedding = r["data"][0]["embedding"]
-    filter.add_category(category, embedding)
-
-
-async def create_filter(label, channels, search, categories):
-    log.info(f"creating filter {label} {channels} {search} {categories}")
+async def create_filter(tag, channels, search, check_classifier, check_repeats):
+    log.info(f"creating filter {tag} {channels} {search}")
     repeat_threshold = 0.86
-    category_threshold = 0.781
     full_search = f"lang:en -is:retweet ({search}) -NFT -mint -crypto -bitcoin -ethereum -drop -airdrop"
     cf = ContentFilter(
-        label, channels, repeat_threshold, category_threshold, full_search
+        tag,
+        channels,
+        repeat_threshold,
+        full_search,
+        check_classifier,
+        check_repeats,
     )
-
-    # set up the categories in the embeddings db
-    cf.clear_categories()
-    for category in categories:
-        log.info(f"adding {label} category {category}")
-        await add_category(cf, category)
-        pass
     return cf
 
 
 filters = [
     {
-        "tag": "companies",
-        "channels": [1057190457110712370],
-        "filter": "OpenAI OR DeepMind OR GoogleAI",
-        "categories": ["openai", "deepmind", "googleai"],
-    },
-    {
         "tag": "eacc",
         "channels": [1057152611469512767, 1068439457751126089],
         "filter": '"e/acc" OR effective accelerationism',
-        "categories": ["e/acc", "effective accelerationism"],
+        "check_classifier": False,
+        "check_repeats": False,
     },
     {
         "tag": "ai",
         "channels": [1047786399266512956],
-        "filter": '"artificial intelligence" OR superintelligence OR "super intelligence" OR "Language Model" OR "machine learning"',
-        "categories": [
-            "artificial intelligence",
-            "technocapital",
-            "superintelligence",
-            "language model",
-            "machine learning",
-        ],
+        "filter": '"artificial intelligence" OR superintelligence OR "super intelligence" OR "Language Model" OR "machine learning" OR openai OR google-research OR arxiv OR deepmind OR googleresearch',
+        "check_classifier": True,
+        "check_repeats": True,
     },
     {
         "tag": "whitepill",
         "channels": [1048696123121995836],
         "filter": 'whitepill OR white pill OR optimism OR human flourishing OR "techno optimism" OR optimist OR "techno optimist" OR futurism OR futurist OR #todayinhistory',
-        "categories": [
-            "white pill",
-            "human flourishing",
-            "good news",
-            "techno optimism",
-            "futurism",
-            "today in history",
-        ],
+        "check_classifier": False,
+        "check_repeats": True,
     },
 ]
 
@@ -155,7 +129,8 @@ async def add_filters(dispatcher):
                 f["tag"],
                 f["channels"],
                 f["filter"],
-                f["categories"],
+                f["check_classifier"],
+                f["check_repeats"],
             )
         )
 
