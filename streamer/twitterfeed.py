@@ -88,25 +88,23 @@ class TwitterFeed(tweepy.asynchronous.AsyncStreamingClient):
         try:
             rules = data["matching_rules"]
             id = data["data"]["id"]
+            text = data["data"]["text"]
+            url = f"https://twitter.com/i/web/status/{id}"
         except KeyError as e:
             log.warn(f"Error reading stream content: {e}")
             return
 
-        try:
-            content = self.get_tweet(id)
-        except KeyError:
-            log.warn(f"Received non-tweet {id}")
-            return
-        if content is None:
-            log.warn(f"Failed to get_tweet for {id}")
-            return
-
+        event = {
+            "id": id,
+            "text": text,
+            "url": url,
+        }
         for tag in rules:
-            log.info(f"[{tag['tag']}] received tweet {id}")
-            await self.queue.put((content, tag["tag"]))
+            await self.queue.put((event, tag["tag"]))
+            qsize = self.queue.qsize()
+            if qsize > 10:
+                log.info(f"[{tag['tag']}] queued tweet {id} (qsize: {qsize})")
 
         # save the first tag in rules, along with the url and the full text
         tag = rules[0]["tag"]
-        url = f"https://twitter.com/{content.user.screen_name}/status/{content.id}"
-        full_text = content.full_text
-        self.tweetdb.add(full_text, url, tag)
+        self.tweetdb.add(text, url, tag)

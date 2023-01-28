@@ -21,9 +21,9 @@ class Dispatcher:
     async def monitor_feed(self):
         """Monitors the twitter feed and dispatches tweets to the proper channel""" ""
         await self.feed.set_rules(self.rules)
-        async for tweet, tag in self.feed:
+        async for event, tag in self.feed:
             filter = self.filters[tag]
-            content = await filter.handle_tweet(tweet)
+            content = await filter.handle_event(event)
             if content is not None:
                 for channel_id in filter.channels:
                     channel = self.discord_client.get_channel(channel_id)

@@ -1,5 +1,6 @@
 import asyncopenai.asyncopenai as openai
 import glog as log
+import json
 import uuid
 from qdrant_client import QdrantClient
 from qdrant_client.http.models import PointStruct, Distance, UpdateStatus, VectorParams
@@ -25,13 +26,12 @@ async def get_embedding(text):
 
 class EmbeddingDB:
     def __init__(self, collection_name="hottakes"):
-        self.client = QdrantClient(host="localhost", port=6333)
-        # self.api_key = get_qdrant_api_key()
-        # self.client = QdrantClient(
-        #    host="5011b95c-b05d-474e-863b-07189e741f3d.us-east-1-0.aws.cloud.qdrant.io",
-        #    port=6333,
-        #    api_key=self.api_key,
-        # )
+        self.api_key = get_qdrant_api_key()
+        self.client = QdrantClient(
+            host="5011b95c-b05d-474e-863b-07189e741f3d.us-east-1-0.aws.cloud.qdrant.io",
+            port=6333,
+            api_key=self.api_key,
+        )
         self.collection_name = collection_name
 
         collections = self.client.get_collections()

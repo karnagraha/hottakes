@@ -115,8 +115,8 @@ filters = [
     {
         "tag": "whitepill",
         "channels": [1048696123121995836],
-        "filter": 'whitepill OR white pill OR optimism OR human flourishing OR "techno optimism" OR optimist OR "techno optimist" OR futurism OR futurist OR #todayinhistory',
-        "check_classifier": False,
+        "filter": 'whitepill OR white pill OR optimism OR human flourishing OR "techno optimism" OR optimist OR "techno optimist" OR futurism OR futurist OR #todayinhistory OR future',
+        "check_classifier": True,
         "check_repeats": True,
     },
 ]
