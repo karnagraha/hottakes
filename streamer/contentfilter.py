@@ -1,7 +1,6 @@
 import glog as log
 
 from . import embeddings
-import asyncopenai.asyncopenai as openai
 from classifier import client
 
 
@@ -52,6 +51,7 @@ class ContentFilter:
     async def handle_event(self, event):
         url = event["url"]
         text = event["text"]
+        response = ""
 
         if self.check_classifier:
             try:
@@ -61,20 +61,21 @@ class ContentFilter:
                 result = None
 
             if result is not None:
-                log.info(f"Classified as {result}: {text}")
                 score = result["score"]
                 match = True if result["label"] == "positive" else False
-                log.info(f"Classifier: [{match}] {score} {url}.")
+                log.info(f"[{self.tag}] classifier [{match}] {score} {url}")
             else:
                 # in failure case just pass the tweet through
+                log.info(f"[{self.tag}] classifier failed for {url}")
                 match = True
                 score = 1.0
 
             if not match:
                 # remove extra whitespace from tweet (\n\t, etc)
+
                 clean_text = " ".join(text.split())
-                log.info(f"Skipping negative tweet: {url} {clean_text}")
                 return
+            response = f"Score:[{score}]"
 
         if self.check_repeat:
             embedding = await embeddings.get_embedding(text)
@@ -84,17 +85,19 @@ class ContentFilter:
                     matches_repeat, text, repeat_score = self.check_repeat(embedding)
                     self.add_repeat(text, embedding)
                 except Exception as e:
-                    log.info(f"Got exception from embeddings: {e}")
+                    log.info(f"[{self.tag}] repeat exception: {e}")
                     # on embeddings db error, ignore repeat logic.
                     matches_repeat = False
                     repeat_score = 0.0
 
                 if matches_repeat:
-                    log.info(f"Skipping repeat: [{repeat_score}] {url}")
+                    log.info(f"[{self.tag}] repeat skipped {repeat_score} {url}")
                     return
             else:
                 # in failure case we just pass the tweet through.
-                log.error(f"Error getting embedding for {url}")
+                log.error(f"[{self.tag}] no embedding returned for {url}")
                 repeat_score = 0.0
+            response = f"{response} Repeat:[{repeat_score}]"
 
-        return f"Score:[{score}] Repeat:[{repeat_score}]\n{url}"
+        response = f"{response}\n{url}"
+        return response

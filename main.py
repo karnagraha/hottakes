@@ -85,7 +85,7 @@ async def activity_check(max_idle=600):
 async def create_filter(tag, channels, search, check_classifier, check_repeats):
     log.info(f"creating filter {tag} {channels} {search}")
     repeat_threshold = 0.86
-    full_search = f"lang:en -is:retweet ({search}) -NFT -mint -crypto -bitcoin -ethereum -drop -airdrop"
+    full_search = f"lang:en -is:retweet ({search}) -NFT -DEX -mint -crypto -bitcoin -ethereum -drop -airdrop"
     cf = ContentFilter(
         tag,
         channels,
@@ -108,16 +108,16 @@ filters = [
     {
         "tag": "ai",
         "channels": [1047786399266512956],
-        "filter": '"artificial intelligence" OR superintelligence OR "super intelligence" OR "Language Model" OR "machine learning" OR openai OR google-research OR arxiv OR deepmind OR googleresearch',
+        "filter": '"artificial intelligence" OR superintelligence OR "super intelligence" OR "Language Model" OR "machine learning" OR openai OR google-research OR arxiv OR deepmind OR googleresearch OR arxiv',
         "check_classifier": True,
         "check_repeats": True,
     },
     {
         "tag": "whitepill",
         "channels": [1048696123121995836],
-        "filter": 'whitepill OR white pill OR optimism OR human flourishing OR "techno optimism" OR optimist OR "techno optimist" OR futurism OR futurist OR #todayinhistory OR future',
-        "check_classifier": True,
-        "check_repeats": True,
+        "filter": 'whitepill OR "white pill" OR human flourishing OR "techno optimism" OR "techno optimist" OR futurism OR futurist OR #todayinhistory OR transhumanist OR posthuman',
+        "check_classifier": False,
+        "check_repeats": False,
     },
 ]
 

@@ -13,15 +13,18 @@ def get_qdrant_api_key():
 
 
 async def get_embedding(text):
-    r = await openai.create_embedding(text)
-    if r is not None:
-        try:
-            embedding = r["data"][0]["embedding"]
-        except (KeyError, IndexError) as e:
-            log.error(f"Error getting embedding: {e}")
-        else:
-            return embedding
-    return None
+    try:
+        r = await openai.create_embedding(text)
+    except openai.OpenAIError as e:
+        log.info(f"Error getting embedding: {e}")
+        return None
+
+    try:
+        embedding = r["data"][0]["embedding"]
+    except (KeyError, IndexError) as e:
+        log.error(f"Error getting embedding: {e}")
+    else:
+        return embedding
 
 
 class EmbeddingDB:

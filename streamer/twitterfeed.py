@@ -68,6 +68,9 @@ class TwitterFeed(tweepy.asynchronous.AsyncStreamingClient):
             log.warn(f"Failed to retrieve tweet {id}: {e}")
             return None
         return tweet
+    
+    def get_qsize(self):
+        return self.queue.qsize()
 
     async def __anext__(self):
         return await self.queue.get()
@@ -101,7 +104,7 @@ class TwitterFeed(tweepy.asynchronous.AsyncStreamingClient):
         }
         for tag in rules:
             await self.queue.put((event, tag["tag"]))
-            qsize = self.queue.qsize()
+            qsize = self.get_qsize()
             if qsize > 10:
                 log.info(f"[{tag['tag']}] queued tweet {id} (qsize: {qsize})")
 
