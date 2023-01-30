@@ -8,9 +8,11 @@ import discord
 import asyncopenai.asyncopenai as openai
 
 from streamer.twitterfeed import TwitterFeed
-from streamer.contentfilter import ContentFilter
+from streamer.eventfilter import EventFilter
 from streamer.dispatcher import Dispatcher
 from streamer.tweetdb import TweetDB
+from streamer.repeatdb import RepeatDB
+from classifier import client as classifier_client
 
 
 def get_bot_token():
@@ -84,15 +86,13 @@ async def activity_check(max_idle=600):
 
 async def create_filter(tag, channels, search, check_classifier, check_repeats):
     log.info(f"creating filter {tag} {channels} {search}")
-    repeat_threshold = 0.86
     full_search = f"lang:en -is:retweet ({search}) -NFT -DEX -mint -crypto -bitcoin -ethereum -drop -airdrop"
-    cf = ContentFilter(
+    cf = EventFilter(
         tag,
         channels,
-        repeat_threshold,
         full_search,
-        check_classifier,
-        check_repeats,
+        classifier=classifier_client if check_classifier else None,
+        repeat_db=RepeatDB(tag) if check_repeats else None,
     )
     return cf
 

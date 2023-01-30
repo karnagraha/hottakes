@@ -26,13 +26,3 @@ async def predict(label, text):
     else:
         log.info(f"Unexpected response while requesting {url}: {response}")
         return None
-
-
-async def main():
-    print(await predict("imdb", "I love this movie!"))
-    return None
-
-
-if __name__ == "__main__":
-
-    asyncio.run(main())

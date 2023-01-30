@@ -7,3 +7,4 @@ scrape.py
 qdrant_storage
 classifier/models/
 *.csv
+*.egg-info

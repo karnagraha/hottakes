@@ -3,7 +3,7 @@
 import asyncio
 import tweepy
 
-from . import contentfilter
+from . import eventfilter
 
 
 class Dispatcher:
