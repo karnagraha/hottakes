@@ -68,7 +68,7 @@ class TwitterFeed(tweepy.asynchronous.AsyncStreamingClient):
             log.warn(f"Failed to retrieve tweet {id}: {e}")
             return None
         return tweet
-    
+
     def get_qsize(self):
         return self.queue.qsize()
 
@@ -110,4 +110,9 @@ class TwitterFeed(tweepy.asynchronous.AsyncStreamingClient):
 
         # save the first tag in rules, along with the url and the full text
         tag = rules[0]["tag"]
-        self.tweetdb.add(text, url, tag)
+        try:
+            self.tweetdb.add(text, url, tag)
+        except sqlite3.IntegrityError as e:
+            # it's apparently not safe to assume that these are unique from the feed.
+            log.warn(f"Error saving tweet {id}: {e}")
+            return

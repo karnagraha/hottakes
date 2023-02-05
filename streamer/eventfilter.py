@@ -15,6 +15,7 @@ class EventFilter:
         filter="",
         repeat_db=None,
         classifier=None,
+        enforce_classifier=True,
     ):
         self.tag = tag
         self.channels = channels
@@ -22,6 +23,7 @@ class EventFilter:
 
         self.classifier = classifier
         self.repeat_db = repeat_db
+        self.enforce_classifier = enforce_classifier
 
     def get_filter(self):
         return self.filter
@@ -36,6 +38,10 @@ class EventFilter:
         url = event["url"]
         text = event["text"]
         response = ""
+
+        if text is None:
+            log.info(f"[{self.tag}] no text for {url}")
+            return
 
         if self.classifier:
             try:
@@ -54,12 +60,19 @@ class EventFilter:
                 match = True
                 score = 1.0
 
-            if not match:
+            if not match and self.enforce_classifier:
                 return
-            response = f"Score:[{score}]"
+            response = f"Match:[{match}] Score:[{score}]"
 
         if self.repeat_db:
-            matches_repeat, text, repeat_score = await self.repeat_db.check_repeat(text)
+            try:
+                matches_repeat, text, repeat_score = await self.repeat_db.check_repeat(
+                    text
+                )
+            except:
+                log.error(f"Got exception from repeat_db: {e}")
+                matches_repeat = False
+                repeat_score = 0.0
             if matches_repeat:
                 log.info(f"[{self.tag}] repeat skipped {repeat_score} {url}")
                 return
